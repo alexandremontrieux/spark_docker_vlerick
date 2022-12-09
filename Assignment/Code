@@ -1,0 +1,31 @@
+from pathlib import Path
+
+from pyspark import SparkConf
+import pyspark.sql.functions as psf
+from pyspark.sql import SparkSession
+
+BUCKET = "dmacademy-course-assets"
+KEY1 = "vlerick/pre-release.csv"
+KEY2 = "vlerick/after-release.csv"
+
+config = {
+    "spark.jars.packages": "org.apache.hadoop:hadoop-aws:3.3.1",
+    "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
+}
+conf = SparkConf().setAll(config.items())
+spark = SparkSession.builder.config(conf=conf).getOrCreate()
+
+# Read the CSV file from the S3 bucket
+pre_release = spark.read.csv(f"s3a://{BUCKET}/{KEY1}", header=True)
+after_release = spark.read.csv(f"s3a://{BUCKET}/{KEY2}", header=True)
+
+
+# Read the CSV data from the S3 bucket using the spark.read.csv() method
+df1 = spark.read.csv(pre_release)
+df2 = spark.read.csv(after_release)
+
+df2.printSchema()
+#else com.amazonaws.auth.InstanceProfileCredentialsProvider
+
+
+
