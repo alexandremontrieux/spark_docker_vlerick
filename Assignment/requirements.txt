@@ -2,3 +2,8 @@ pandas
 numpy 
 scikit-learn
 pyspark
+os
+pathlib
+python-dotenv
+statsmodels
+imblearn
