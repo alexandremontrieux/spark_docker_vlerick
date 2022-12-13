@@ -11,9 +11,10 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
+from numpy import array
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestClassifier
 import statsmodels.api as sm
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
@@ -75,16 +76,13 @@ df_movies['content_rating'] = content_imputer.transform(df_movies[['content_rati
 
 df_movies = df_movies.dropna()
 
-df_movies = df_movies[df_movies['num_voted_users'] >= 500]
-df_movies = df_movies.drop(columns= 'num_voted_users')
-
+genrelist = genredummies.columns.values.tolist()
 othergenreslist= []
 
 for i in genrelist:
     if df_movies[df_movies[i] == 1].shape[0] < 30:
         othergenreslist.append(i)
 
-print(othergenreslist)
 
 othergenres = []
 
@@ -110,7 +108,7 @@ for i in languagelist:
     if df_movies[df_movies[i] == 1].shape[0] < 50:
         otherlanguageslist.append(i)
 
-print(otherlanguageslist)
+
 df_movies = df_movies.drop(columns= otherlanguageslist)
 
 countrydummies = pd.get_dummies(df_movies['country'])
@@ -124,7 +122,7 @@ for i in countrylist:
     if df_movies[df_movies[i] == 1].shape[0] < 100:
         othercountrieslist.append(i)
 
-print(othercountrieslist)
+
 df_movies = df_movies.drop(columns= othercountrieslist)
 df_movies = df_movies = df_movies.drop(columns= ['actor_1_name', 'actor_2_name', 'actor_3_name', 'director_name', 'movie_title'])
 
@@ -139,7 +137,6 @@ for i in contentlist:
     if df_movies[df_movies[i] == 1].shape[0] < 100:
         othercontentlist.append(i)
 
-print(othercontentlist)
 
 othercontent = []
 
@@ -158,6 +155,8 @@ df = df_movies.copy()
 df_for = df
 label = []
 
+df_for['imdb_score'] = pd.to_numeric(df_for['imdb_score'])
+
 for i in range(0, df_for.shape[0]):
     if df_for.iloc[i,df_for.columns.get_loc('imdb_score')] < 7:
         label.append(0)
@@ -170,17 +169,20 @@ df_for = df_for.drop(columns= 'imdb_score')
 x = df_for.drop(columns= 'Label')
 y = df_for['Label']
 x_train, x_val, y_train, y_val = train_test_split(x,y,test_size=0.3, random_state = 1)
-sm = SMOTE(sampling_strategy='minority', random_state=1)
-X_res, y_res = sm.fit_resample(x_train, y_train)
+#sm = SMOTE(sampling_strategy='minority', random_state=1)
+#X_res, y_res = sm.fit_resample(x_train, y_train)
 regressor = RandomForestClassifier(n_estimators= 100, random_state= 1) # We use 100 decision trees to build our forest
-model= regressor.fit(X_res, y_res)
-y_predict_train = model.predict(X_res)
+model= regressor.fit(x_train, y_train)
+y_predict_train = model.predict(x_train)
 y_predict = model.predict(x_val)
 
-y_predict
+print(y_predict)
 
-val_pred = pandas_to_spark(y_predict)
-val_pred.write.json(f"s3a://{BUCKET}/vlerick/alexandre_montrieux")
+
+df_spark = pd.DataFrame(y_predict)
+
+spark_df = spark.createDataFrame(df_spark)
+spark_df.write.json(f"s3a://{BUCKET}/vlerick/alexandre_montrieux")
 
 
 
