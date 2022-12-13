@@ -178,6 +178,8 @@ y_predict = model.predict(x_val)
 
 y_predict
 
+val_pred = pandas_to_spark(y_predict)
+val_pred.write.json(f"s3a://{BUCKET}/vlerick/alexandre_montrieux")
 
 
 
